@@ -21,20 +21,16 @@ fun main(args: Array<String>) {
             schedule("Hello Again")
         }
 
-        private fun schedule(message: String) {
-            context.system.scheduler().scheduleOnce(
-                    Duration.create(1, TimeUnit.SECONDS),
-                    self,
-                    message,
-                    context.system.dispatcher(),
-                    self
-            )
-        }
-
+        private fun schedule(message: String) =
+                context.system.scheduler().scheduleOnce(
+                Duration.create(1, TimeUnit.SECONDS),
+                self, // target actor ref
+                message, // message to put in the targets mailbox when triggered.
+                context.system.dispatcher(),
+                self // sender actor ref
+        )
     }
-
 
     val actorSystem = ActorSystem.create("part3")
     actorSystem.actorOf(Props.create(ScheduledActor::class.java), "scheduled")
-
 }
