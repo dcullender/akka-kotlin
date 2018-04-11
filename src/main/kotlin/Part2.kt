@@ -1,4 +1,3 @@
-
 import akka.actor.AbstractLoggingActor
 import akka.actor.ActorInitializationException
 import akka.actor.ActorKilledException
@@ -20,19 +19,22 @@ fun main(args: Array<String>) {
             log().info("Starting Child Actor")
         }
 
-        override fun createReceive() = ReceiveBuilder().match(String::class.java) {
-            when (it) {
+        override fun createReceive() =
+            ReceiveBuilder()
+                .match(String::class.java, this::onMessage)
+                .build()
+
+        private fun onMessage(message: String) {
+            when (message) {
                 "DIE" -> throw Exception("DEAD")
-                else -> log().info(it)
+                else -> log().info(message)
             }
-        }.build()
+        }
     }
 
     class ParentActor : AbstractLoggingActor() {
 
-        /**
-         * restart all child Actors if one throws an exception.
-         */
+         //restart all child Actors if one throws an exception.
         override fun supervisorStrategy() = AllForOneStrategy(-1, Duration.Inf()) {
             when (it) {
                 is ActorInitializationException -> SupervisorStrategy.stop()
@@ -49,7 +51,8 @@ fun main(args: Array<String>) {
             context.actorOf(Props.create(ChildActor::class.java), "child3")
         }
 
-        override fun createReceive() = ReceiveBuilder()
+        override fun createReceive() =
+            ReceiveBuilder()
                 .match(String::class.java) { context.children.forEach { child -> child.tell(it, self()) } }
                 .build()
     }
@@ -58,7 +61,6 @@ fun main(args: Array<String>) {
     val actorRef = actorSystem.actorOf(Props.create(ParentActor::class.java), "parent")
     actorSystem.log().info("Sending Hello Kotlin")
     actorRef.tell("Hello Kotlin", ActorRef.noSender())
-    Thread.sleep(1000)
     actorSystem.log().info("Sending DIE message to child1. We expect all child actors to restart")
     actorSystem.actorSelection("akka://part2/user/parent/child1").tell("DIE", ActorRef.noSender())
 }
