@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.2.21'
+    ext.kotlin_version = '1.2.31'
     repositories {
         mavenCentral()
     }
@@ -37,8 +37,4 @@ dependencies {
     compile group: 'com.typesafe.akka', name: 'akka-actor_2.11', version: '2.5.11'
     compile group: 'com.typesafe.akka', name: 'akka-slf4j_2.11', version: '2.5.11'
     compile group: 'com.typesafe.akka', name: 'akka-stream_2.11', version: '2.5.11'
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = "4.1"
 }

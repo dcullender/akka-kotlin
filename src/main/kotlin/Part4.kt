@@ -1,33 +1,36 @@
 import akka.actor.AbstractLoggingActor
-import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.japi.pf.ReceiveBuilder
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
 
-    open class Event
-    class Event1 : Event()
-    class Event2 : Event()
+    class ScheduledActor : AbstractLoggingActor() {
 
-    class LoggingActor : AbstractLoggingActor() {
-        override fun createReceive() =
-                ReceiveBuilder()
-                        .match(Event1::class.java) { log().info("Received Event 1") }
-                        .match(Event2::class.java) { log().info("Received Event 2") }
-                        .build()
+        override fun preStart() {
+            super.preStart()
+            schedule("Hello Kotlin")
+        }
+
+        override fun createReceive() = ReceiveBuilder().match(String::class.java, this::onMessage).build()
+
+        private fun onMessage(message: String) {
+            log().info(message)
+            schedule("Hello Again")
+        }
+
+        private fun schedule(message: String) =
+                context.system.scheduler().scheduleOnce(
+                Duration.create(1, TimeUnit.SECONDS),
+                self, // target actor ref
+                message, // message to put in the targets mailbox when triggered.
+                context.system.dispatcher(),
+                self // sender actor ref
+        )
     }
 
-    val actorSystem = ActorSystem.create("part4")
-    val loggerRef1 = actorSystem.actorOf(Props.create(LoggingActor::class.java), "Logger1")
-    val loggerRef2 = actorSystem.actorOf(Props.create(LoggingActor::class.java), "Logger2")
-    val loggerRef3 = actorSystem.actorOf(Props.create(LoggingActor::class.java), "Logger3")
-    val eventStream = actorSystem.eventStream()
-    // setup our subscriptions
-    eventStream.subscribe(loggerRef1, Event::class.java)
-    eventStream.subscribe(loggerRef2, Event1::class.java)
-    eventStream.subscribe(loggerRef3, Event2::class.java)
-    // publish some messages to the event stream
-    eventStream.publish(Event1())
-    eventStream.publish(Event2())
+    val actorSystem = ActorSystem.create("part3")
+    actorSystem.actorOf(Props.create(ScheduledActor::class.java), "scheduled")
 }

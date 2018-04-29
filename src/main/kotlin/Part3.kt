@@ -1,36 +1,19 @@
+
 import akka.actor.AbstractLoggingActor
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.japi.pf.ReceiveBuilder
-import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeUnit
+import com.typesafe.config.ConfigFactory
 
 fun main(args: Array<String>) {
-
-    class ScheduledActor : AbstractLoggingActor() {
-
-        override fun preStart() {
-            super.preStart()
-            schedule("Hello Kotlin")
-        }
-
-        override fun createReceive() = ReceiveBuilder().match(String::class.java, this::onMessage).build()
-
-        private fun onMessage(message: String) {
-            log().info(message)
-            schedule("Hello Again")
-        }
-
-        private fun schedule(message: String) =
-                context.system.scheduler().scheduleOnce(
-                Duration.create(1, TimeUnit.SECONDS),
-                self, // target actor ref
-                message, // message to put in the targets mailbox when triggered.
-                context.system.dispatcher(),
-                self // sender actor ref
-        )
+    class HelloKotlinActor : AbstractLoggingActor() {
+        override fun createReceive() = ReceiveBuilder().match(String::class.java) { log().info(it) }.build()
     }
-
-    val actorSystem = ActorSystem.create("part3")
-    actorSystem.actorOf(Props.create(ScheduledActor::class.java), "scheduled")
+    val actorSystem = ActorSystem.create("part3", ConfigFactory.parseResources("part3.conf"))
+    val actorRef1 = actorSystem.actorOf(Props.create(HelloKotlinActor::class.java),"actor1")
+    val actorRef2 = actorSystem.actorOf(Props.create(HelloKotlinActor::class.java).withDispatcher("actor2-dispatcher"),"actor2")
+    actorSystem.log().info("Sending Hello Kotlin")
+    actorRef1.tell("Hello Actor 1", ActorRef.noSender())
+    actorRef2.tell("Hello Actor 2", ActorRef.noSender())
 }
