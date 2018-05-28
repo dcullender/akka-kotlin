@@ -1,9 +1,11 @@
+
 import akka.actor.AbstractLoggingActor
 import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.japi.pf.ReceiveBuilder
-import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeUnit
+import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import com.typesafe.config.ConfigFactory
 
 fun main(args: Array<String>) {
 
@@ -11,26 +13,23 @@ fun main(args: Array<String>) {
 
         override fun preStart() {
             super.preStart()
-            schedule("Hello Kotlin")
+            val actorSystem = context.system as ExtendedActorSystem
+            QuartzSchedulerExtension(actorSystem)
+                .schedule(
+                    "HelloKotlin", // name of quartz job configured in akka config
+                    self, // target actor
+                    "hello kotlin" // message to send to target actor
+                )
         }
 
-        override fun createReceive() = ReceiveBuilder().match(String::class.java, this::onMessage).build()
-
-        private fun onMessage(message: String) {
-            log().info(message)
-            schedule("Hello Again")
+        override fun createReceive(): Receive {
+            return ReceiveBuilder()
+                .match(String::class.java) { log().info(it) }
+                .build()
         }
 
-        private fun schedule(message: String) =
-                context.system.scheduler().scheduleOnce(
-                Duration.create(1, TimeUnit.SECONDS),
-                self, // target actor ref
-                message, // message to put in the targets mailbox when triggered.
-                context.system.dispatcher(),
-                self // sender actor ref
-        )
     }
 
-    val actorSystem = ActorSystem.create("part3")
-    actorSystem.actorOf(Props.create(ScheduledActor::class.java), "scheduled")
+    val actorSystem = ActorSystem.create("part4", ConfigFactory.parseResources("part4.conf"))
+    actorSystem.actorOf(Props.create(ScheduledActor::class.java), "akka-quartz-scheduler")
 }

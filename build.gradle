@@ -37,4 +37,5 @@ dependencies {
     compile group: 'com.typesafe.akka', name: 'akka-actor_2.11', version: '2.5.11'
     compile group: 'com.typesafe.akka', name: 'akka-slf4j_2.11', version: '2.5.11'
     compile group: 'com.typesafe.akka', name: 'akka-stream_2.11', version: '2.5.11'
+    compile group: 'com.enragedginger', name: 'akka-quartz-scheduler_2.11', version: '1.3.0-akka-2.3.x'
 }
